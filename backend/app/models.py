@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, MetaData, String, func
+from sqlalchemy import DateTime, ForeignKey, MetaData, Numeric, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Predictable constraint names, so future migrations can find and change them.
@@ -32,3 +33,27 @@ class ApiKey(Base):
     )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class RequestLog(Base):
+    """One row per authenticated chat request, successful or not."""
+
+    __tablename__ = "request_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    # Keys are revoked, never deleted, in normal use. CASCADE only matters for test cleanup.
+    api_key_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("api_keys.id", ondelete="CASCADE"), index=True
+    )
+    model: Mapped[str] = mapped_column(String(100))
+    provider: Mapped[str | None] = mapped_column(String(50))
+    status_code: Mapped[int]
+    outcome: Mapped[str] = mapped_column(String(20))
+    error_type: Mapped[str | None] = mapped_column(String(50))
+    latency_ms: Mapped[int | None]
+    input_tokens: Mapped[int | None]
+    output_tokens: Mapped[int | None]
+    cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 8))

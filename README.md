@@ -11,5 +11,5 @@ Work in progress.
 - [x] Alembic migrations and api_keys table
 - [x] API key generation, revocation CLI and Bearer authentication
 - [x] Provider interface, mock provider and POST /v1/chat
-- [ ] Request logging (latency, tokens, cost, outcome)
+- [x] Request logging (latency, tokens, cost, outcome)
 - [ ] Timeouts, retries, fallback and rate limiting
