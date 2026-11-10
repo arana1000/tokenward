@@ -7,5 +7,6 @@ Work in progress.
 ## Status
 - [x] FastAPI app with /health
 - [x] PostgreSQL via Docker Compose
-- [ ] Config, SQLAlchemy, Alembic
+- [x] Settings from .env, SQLAlchemy connection, /ready endpoint
+- [ ] Alembic migrations
 - [ ] API keys table and key authentication
