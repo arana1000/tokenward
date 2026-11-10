@@ -13,5 +13,12 @@ Work in progress.
 - [x] Provider interface, mock provider and POST /v1/chat
 - [x] Request logging (latency, tokens, cost, outcome)
 - [x] Retries with exponential backoff and provider fallback
-- [ ] Per-key rate limiting
+- [x] Per-key rate limiting (token bucket, 429 with Retry-After)
 - [ ] CI, Docker image and first deploy
+
+## Known limitations
+- Rate limiting is held in memory, so limits reset when the app restarts and are
+  not shared between instances. Running several instances would need a shared
+  store such as Redis.
+- Endpoints are synchronous, so concurrent requests are capped by the worker
+  thread pool.

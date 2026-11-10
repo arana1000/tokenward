@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     postgres_db: str = "tokenward"
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
+
+    # Chat requests each API key may make per minute.
+    rate_limit_per_minute: int = Field(default=60, gt=0)
 
     @property
     def database_url(self) -> URL:

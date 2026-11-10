@@ -16,6 +16,7 @@ class Outcome(StrEnum):
     PROVIDER_ERROR = "provider_error"
     TIMEOUT = "timeout"
     UNKNOWN_MODEL = "unknown_model"
+    RATE_LIMITED = "rate_limited"
 
 
 def record_request(

@@ -1,8 +1,9 @@
+import math
 import time
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth import require_api_key
@@ -10,6 +11,7 @@ from app.db import get_db
 from app.models import ApiKey
 from app.providers.base import ProviderTimeoutError
 from app.providers.registry import ProviderRegistry, UnknownModelError, get_registry
+from app.rate_limit import RateLimiter, get_rate_limiter
 from app.reliability import (
     ProviderCallFailedError,
     RetryPolicy,
@@ -31,18 +33,44 @@ def _elapsed_ms(started: float) -> int:
     responses={
         400: {"description": "Unknown model"},
         401: {"description": "Invalid or missing API key"},
+        429: {"description": "Rate limit exceeded"},
         502: {"description": "Upstream provider error"},
         504: {"description": "Upstream provider timed out"},
     },
 )
 def chat(
     body: ChatRequest,
+    response: Response,
     api_key: Annotated[ApiKey, Depends(require_api_key)],
     registry: Annotated[ProviderRegistry, Depends(get_registry)],
     retry_policy: Annotated[RetryPolicy, Depends(get_retry_policy)],
+    limiter: Annotated[RateLimiter, Depends(get_rate_limiter)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ChatResponse:
     """Send a chat request to the providers for the requested model, with retries and fallback."""
+    decision = limiter.check(api_key.id)
+    if not decision.allowed:
+        record_request(
+            db,
+            api_key_id=api_key.id,
+            model=body.model,
+            provider=None,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            outcome=Outcome.RATE_LIMITED,
+            attempts=0,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded",
+            headers={
+                "Retry-After": str(math.ceil(decision.retry_after_seconds)),
+                "X-RateLimit-Limit": str(decision.limit),
+                "X-RateLimit-Remaining": "0",
+            },
+        )
+    response.headers["X-RateLimit-Limit"] = str(decision.limit)
+    response.headers["X-RateLimit-Remaining"] = str(decision.remaining)
+
     try:
         providers = registry.providers_for(body.model)
     except UnknownModelError:
