@@ -1,9 +1,7 @@
 import uuid
-from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
 
 from app.api_keys import create_api_key, revoke_api_key
 from app.db import SessionLocal
@@ -11,20 +9,6 @@ from app.main import app
 from app.models import ApiKey
 
 client = TestClient(app)
-
-
-@pytest.fixture
-def api_key() -> Iterator[tuple[uuid.UUID, str]]:
-    """Create a real key for the test, then delete it afterwards."""
-    with SessionLocal() as session:
-        key, plaintext = create_api_key(session, "pytest key")
-        key_id = key.id
-
-    yield key_id, plaintext
-
-    with SessionLocal() as session:
-        session.execute(delete(ApiKey).where(ApiKey.id == key_id))
-        session.commit()
 
 
 def test_missing_key_returns_401() -> None:

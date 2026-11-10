@@ -10,5 +10,6 @@ Work in progress.
 - [x] Settings from .env, SQLAlchemy connection, /ready endpoint
 - [x] Alembic migrations and api_keys table
 - [x] API key generation, revocation CLI and Bearer authentication
-- [ ] Provider interface and mock provider
-- [ ] POST /v1/chat
+- [x] Provider interface, mock provider and POST /v1/chat
+- [ ] Request logging (latency, tokens, cost, outcome)
+- [ ] Timeouts, retries, fallback and rate limiting

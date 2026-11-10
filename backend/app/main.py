@@ -11,8 +11,10 @@ from sqlalchemy.orm import Session
 from app.auth import require_api_key
 from app.db import get_db
 from app.models import ApiKey
+from app.routes import chat
 
 app = FastAPI(title="Tokenward API", version="0.1.0")
+app.include_router(chat.router)
 
 
 class HealthResponse(BaseModel):
