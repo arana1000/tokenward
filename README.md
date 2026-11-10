@@ -9,4 +9,6 @@ Work in progress.
 - [x] PostgreSQL via Docker Compose
 - [x] Settings from .env, SQLAlchemy connection, /ready endpoint
 - [x] Alembic migrations and api_keys table
-- [ ] API key generation and key authentication
+- [x] API key generation, revocation CLI and Bearer authentication
+- [ ] Provider interface and mock provider
+- [ ] POST /v1/chat
