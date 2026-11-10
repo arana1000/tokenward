@@ -1,5 +1,7 @@
 # Tokenward
 
+[![CI](https://github.com/arana1000/tokenward/actions/workflows/ci.yml/badge.svg)](https://github.com/arana1000/tokenward/actions/workflows/ci.yml)
+
 An LLM API gateway: one API in front of multiple LLM providers, with API keys,
 rate limiting, retries, provider fallback and usage and cost tracking.
 Work in progress.
