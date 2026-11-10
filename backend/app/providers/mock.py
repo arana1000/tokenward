@@ -16,18 +16,19 @@ class MockProvider:
 
     [mock:timeout]      raises ProviderTimeoutError
     [mock:error]        raises ProviderUnavailableError
+    [mock:error@NAME]   raises ProviderUnavailableError only in the provider called NAME
     [mock:rate_limit]   raises ProviderRateLimitedError
     [mock:bad_request]  raises ProviderBadRequestError
     [mock:slow]         waits before replying
     """
 
-    name = "mock"
-
     def __init__(
         self,
+        name: str = "mock",
         sleep: Callable[[float], None] = time.sleep,
         slow_seconds: float = 2.0,
     ) -> None:
+        self.name = name
         self._sleep = sleep
         self._slow_seconds = slow_seconds
 
@@ -36,7 +37,7 @@ class MockProvider:
 
         if "[mock:timeout]" in prompt:
             raise ProviderTimeoutError("Mock provider timed out")
-        if "[mock:error]" in prompt:
+        if "[mock:error]" in prompt or f"[mock:error@{self.name}]" in prompt:
             raise ProviderUnavailableError("Mock provider returned a server error")
         if "[mock:rate_limit]" in prompt:
             raise ProviderRateLimitedError("Mock provider is rate limiting")

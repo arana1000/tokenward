@@ -57,3 +57,5 @@ class RequestLog(Base):
     input_tokens: Mapped[int | None]
     output_tokens: Mapped[int | None]
     cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 8))
+    # Total provider calls for this request, including retries and fallbacks.
+    attempts: Mapped[int] = mapped_column(server_default="1")

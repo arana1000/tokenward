@@ -8,8 +8,14 @@ from sqlalchemy.orm import Session
 from app.auth import require_api_key
 from app.db import get_db
 from app.models import ApiKey
-from app.providers.base import ProviderError, ProviderTimeoutError
+from app.providers.base import ProviderTimeoutError
 from app.providers.registry import ProviderRegistry, UnknownModelError, get_registry
+from app.reliability import (
+    ProviderCallFailedError,
+    RetryPolicy,
+    complete_with_fallback,
+    get_retry_policy,
+)
 from app.request_logs import Outcome, record_request
 from app.schemas import ChatRequest, ChatResponse, Usage
 
@@ -33,11 +39,12 @@ def chat(
     body: ChatRequest,
     api_key: Annotated[ApiKey, Depends(require_api_key)],
     registry: Annotated[ProviderRegistry, Depends(get_registry)],
+    retry_policy: Annotated[RetryPolicy, Depends(get_retry_policy)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ChatResponse:
-    """Send a chat request to whichever provider serves the requested model."""
+    """Send a chat request to the providers for the requested model, with retries and fallback."""
     try:
-        provider = registry.provider_for(body.model)
+        providers = registry.providers_for(body.model)
     except UnknownModelError:
         record_request(
             db,
@@ -46,6 +53,7 @@ def chat(
             provider=None,
             status_code=status.HTTP_400_BAD_REQUEST,
             outcome=Outcome.UNKNOWN_MODEL,
+            attempts=0,
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,54 +62,46 @@ def chat(
 
     started = time.perf_counter()
     try:
-        result = provider.complete(body)
-    except ProviderTimeoutError as exc:
+        outcome = complete_with_fallback(providers, body, retry_policy)
+    except ProviderCallFailedError as failure:
+        timed_out = isinstance(failure.last_error, ProviderTimeoutError)
+        status_code = (
+            status.HTTP_504_GATEWAY_TIMEOUT if timed_out else status.HTTP_502_BAD_GATEWAY
+        )
         record_request(
             db,
             api_key_id=api_key.id,
             model=body.model,
-            provider=provider.name,
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            outcome=Outcome.TIMEOUT,
-            error_type=type(exc).__name__,
+            provider=failure.provider.name,
+            status_code=status_code,
+            outcome=Outcome.TIMEOUT if timed_out else Outcome.PROVIDER_ERROR,
+            error_type=type(failure.last_error).__name__,
             latency_ms=_elapsed_ms(started),
+            attempts=failure.attempts,
         )
         raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Upstream provider timed out",
-        ) from exc
-    except ProviderError as exc:
-        record_request(
-            db,
-            api_key_id=api_key.id,
-            model=body.model,
-            provider=provider.name,
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            outcome=Outcome.PROVIDER_ERROR,
-            error_type=type(exc).__name__,
-            latency_ms=_elapsed_ms(started),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Upstream provider error",
-        ) from exc
+            status_code=status_code,
+            detail="Upstream provider timed out" if timed_out else "Upstream provider error",
+        ) from failure
 
     latency_ms = _elapsed_ms(started)
+    result = outcome.result
     record_request(
         db,
         api_key_id=api_key.id,
         model=body.model,
-        provider=provider.name,
+        provider=outcome.provider.name,
         status_code=status.HTTP_200_OK,
         outcome=Outcome.SUCCESS,
         latency_ms=latency_ms,
         input_tokens=result.input_tokens,
         output_tokens=result.output_tokens,
+        attempts=outcome.attempts,
     )
 
     return ChatResponse(
         id=f"chat_{uuid.uuid4().hex}",
-        provider=provider.name,
+        provider=outcome.provider.name,
         model=result.model,
         content=result.content,
         usage=Usage(input_tokens=result.input_tokens, output_tokens=result.output_tokens),

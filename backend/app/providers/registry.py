@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from app.providers.base import LLMProvider
 from app.providers.mock import MockProvider
 
@@ -7,12 +9,15 @@ class UnknownModelError(Exception):
 
 
 class ProviderRegistry:
-    """Maps model names that clients can request to the provider that serves them."""
+    """Maps each model name to an ordered list of providers: primary first, then fallbacks."""
 
-    def __init__(self, routes: dict[str, LLMProvider]) -> None:
-        self._routes = dict(routes)
+    def __init__(self, routes: dict[str, Sequence[LLMProvider]]) -> None:
+        for model, providers in routes.items():
+            if not providers:
+                raise ValueError(f"Model {model!r} has no providers")
+        self._routes = {model: tuple(providers) for model, providers in routes.items()}
 
-    def provider_for(self, model: str) -> LLMProvider:
+    def providers_for(self, model: str) -> tuple[LLMProvider, ...]:
         try:
             return self._routes[model]
         except KeyError:
@@ -23,7 +28,9 @@ class ProviderRegistry:
         return sorted(self._routes)
 
 
-_default_registry = ProviderRegistry({"mock-1": MockProvider()})
+_default_registry = ProviderRegistry(
+    {"mock-1": [MockProvider(name="mock"), MockProvider(name="mock-backup")]}
+)
 
 
 def get_registry() -> ProviderRegistry:

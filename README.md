@@ -12,4 +12,6 @@ Work in progress.
 - [x] API key generation, revocation CLI and Bearer authentication
 - [x] Provider interface, mock provider and POST /v1/chat
 - [x] Request logging (latency, tokens, cost, outcome)
-- [ ] Timeouts, retries, fallback and rate limiting
+- [x] Retries with exponential backoff and provider fallback
+- [ ] Per-key rate limiting
+- [ ] CI, Docker image and first deploy

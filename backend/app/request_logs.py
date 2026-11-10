@@ -30,6 +30,7 @@ def record_request(
     input_tokens: int | None = None,
     output_tokens: int | None = None,
     error_type: str | None = None,
+    attempts: int = 1,
 ) -> None:
     """Save one request log row. A logging failure must never fail the client's request."""
     cost = None
@@ -48,6 +49,7 @@ def record_request(
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost,
+            attempts=attempts,
         )
     )
     try:

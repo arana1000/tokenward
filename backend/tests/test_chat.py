@@ -57,3 +57,12 @@ def test_provider_timeout_returns_504(auth_headers: dict[str, str]) -> None:
 
     assert response.status_code == 504
     assert response.json() == {"detail": "Upstream provider timed out"}
+
+
+def test_falls_back_to_backup_provider(auth_headers: dict[str, str]) -> None:
+    response = client.post("/v1/chat", json=chat_body("[mock:error@mock]"), headers=auth_headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["provider"] == "mock-backup"
+    assert body["content"] == "Mock reply to: [mock:error@mock]"

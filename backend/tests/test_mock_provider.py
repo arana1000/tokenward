@@ -74,3 +74,13 @@ def test_slow_trigger_waits_before_replying() -> None:
 
     assert waits == [2.0]
     assert result.content.startswith("Mock reply to:")
+
+
+def test_targeted_error_only_affects_named_provider() -> None:
+    request = make_request("[mock:error@mock]")
+
+    with pytest.raises(ProviderUnavailableError):
+        MockProvider(name="mock").complete(request)
+
+    result = MockProvider(name="mock-backup").complete(request)
+    assert result.content == "Mock reply to: [mock:error@mock]"

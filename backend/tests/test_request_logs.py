@@ -52,6 +52,7 @@ def test_successful_request_is_logged(
     assert log.cost_usd == Decimal("0.000012")
     assert log.latency_ms is not None and log.latency_ms >= 0
     assert log.error_type is None
+    assert log.attempts == 1
 
 
 def test_provider_error_is_logged(
@@ -65,6 +66,8 @@ def test_provider_error_is_logged(
     assert log.outcome == Outcome.PROVIDER_ERROR
     assert log.status_code == 502
     assert log.error_type == "ProviderUnavailableError"
+    assert log.provider == "mock-backup"
+    assert log.attempts == 6
     assert log.input_tokens is None
     assert log.cost_usd is None
 
@@ -80,6 +83,20 @@ def test_timeout_is_logged(
     assert log.outcome == Outcome.TIMEOUT
     assert log.status_code == 504
     assert log.error_type == "ProviderTimeoutError"
+    assert log.attempts == 6
+
+
+def test_fallback_is_logged(
+    api_key: tuple[uuid.UUID, str], auth_headers: dict[str, str]
+) -> None:
+    key_id, _ = api_key
+
+    client.post("/v1/chat", json=chat_body("[mock:error@mock]"), headers=auth_headers)
+
+    [log] = logs_for(key_id)
+    assert log.outcome == Outcome.SUCCESS
+    assert log.provider == "mock-backup"
+    assert log.attempts == 4
 
 
 def test_unknown_model_is_logged(
@@ -94,6 +111,7 @@ def test_unknown_model_is_logged(
     assert log.status_code == 400
     assert log.provider is None
     assert log.model == "gpt-nonexistent"
+    assert log.attempts == 0
 
 
 def test_unauthenticated_request_is_not_logged() -> None:

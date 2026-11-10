@@ -6,7 +6,17 @@ from sqlalchemy import delete
 
 from app.api_keys import create_api_key
 from app.db import SessionLocal
+from app.main import app
 from app.models import ApiKey
+from app.reliability import RetryPolicy, get_retry_policy
+
+
+@pytest.fixture(autouse=True)
+def no_retry_delays() -> Iterator[None]:
+    """Keep the same retry behaviour in tests, but without waiting between attempts."""
+    app.dependency_overrides[get_retry_policy] = lambda: RetryPolicy(base_delay=0.0, max_delay=0.0)
+    yield
+    app.dependency_overrides.pop(get_retry_policy, None)
 
 
 @pytest.fixture
