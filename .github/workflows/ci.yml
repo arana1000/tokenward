@@ -53,3 +53,13 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -v
+
+  build-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Build the API image
+        run: docker build -t tokenward-api ./backend
