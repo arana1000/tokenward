@@ -8,5 +8,5 @@ Work in progress.
 - [x] FastAPI app with /health
 - [x] PostgreSQL via Docker Compose
 - [x] Settings from .env, SQLAlchemy connection, /ready endpoint
-- [ ] Alembic migrations
-- [ ] API keys table and key authentication
+- [x] Alembic migrations and api_keys table
+- [ ] API key generation and key authentication
