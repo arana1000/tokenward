@@ -21,12 +21,15 @@ class Settings(BaseSettings):
     postgres_db: str = "tokenward"
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
+    # Set to "require" for hosted databases that only accept encrypted connections.
+    postgres_sslmode: str | None = None
 
     # Chat requests each API key may make per minute.
     rate_limit_per_minute: int = Field(default=60, gt=0)
 
     @property
     def database_url(self) -> URL:
+        query = {"sslmode": self.postgres_sslmode} if self.postgres_sslmode else {}
         return URL.create(
             drivername="postgresql+psycopg",
             username=self.postgres_user,
@@ -34,6 +37,7 @@ class Settings(BaseSettings):
             host=self.postgres_host,
             port=self.postgres_port,
             database=self.postgres_db,
+            query=query,
         )
 
 
