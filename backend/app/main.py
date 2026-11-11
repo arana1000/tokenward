@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -33,6 +34,12 @@ class KeyInfoResponse(BaseModel):
     name: str
     key_prefix: str
     created_at: datetime
+
+
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """Send visitors to the interactive docs instead of a 404."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

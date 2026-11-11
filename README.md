@@ -6,6 +6,14 @@ An LLM API gateway: one API in front of multiple LLM providers, with API keys,
 rate limiting, retries, provider fallback and usage and cost tracking.
 Work in progress.
 
+## Live demo
+
+https://tokenward.onrender.com/docs
+
+Hosted on a free tier, so the first request after a quiet period can take about
+a minute while the service wakes up. Chat endpoints need an API key. The health
+checks at `/health` and `/ready` are open.
+
 ## Run it with Docker
 
 Requires Docker. Copy `.env.example` to `.env`, set a password, then:
@@ -29,7 +37,9 @@ Create an API key:
 - [x] Retries with exponential backoff and provider fallback
 - [x] Per-key rate limiting (token bucket, 429 with Retry-After)
 - [x] CI with GitHub Actions and a Docker image for the API
-- [ ] First deploy
+- [x] Deployed on Render with Neon Postgres
+- [ ] Real LLM provider
+- [ ] Usage endpoints and dashboard
 
 ## Known limitations
 - Rate limiting is held in memory, so limits reset when the app restarts and are
