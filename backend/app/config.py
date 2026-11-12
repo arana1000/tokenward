@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Chat requests each API key may make per minute.
     rate_limit_per_minute: int = Field(default=60, gt=0)
 
+    # Optional. When set, the "gemini-flash" model becomes available.
+    gemini_api_key: SecretStr | None = None
+    # The upstream Gemini model that "gemini-flash" maps to.
+    gemini_model: str = "gemini-3.5-flash-lite"
+    # How long to wait for a provider to answer before giving up.
+    provider_timeout_seconds: float = Field(default=30.0, gt=0)
+
     @property
     def database_url(self) -> URL:
         query = {"sslmode": self.postgres_sslmode} if self.postgres_sslmode else {}

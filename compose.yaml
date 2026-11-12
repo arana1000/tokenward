@@ -23,6 +23,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-tokenward}
       POSTGRES_HOST: db
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:

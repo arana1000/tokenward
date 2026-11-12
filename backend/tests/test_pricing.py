@@ -14,3 +14,7 @@ def test_small_request_cost_is_calculated_exactly() -> None:
 
 def test_unknown_model_has_no_cost() -> None:
     assert estimate_cost("not-a-model", 100, 100) is None
+
+
+def test_gemini_flash_uses_its_list_price() -> None:
+        assert estimate_cost("gemini-flash", 1_000_000, 1_000_000) == Decimal("2.80")

@@ -4,3 +4,4 @@ pydantic-settings>=2.6
 sqlalchemy>=2.0.36
 psycopg[binary]>=3.3
 alembic>=1.14
+httpx2>=2.0.0

@@ -1,6 +1,9 @@
 from collections.abc import Sequence
+from functools import lru_cache
 
+from app.config import Settings, get_settings
 from app.providers.base import LLMProvider
+from app.providers.gemini import GeminiProvider
 from app.providers.mock import MockProvider
 
 
@@ -28,11 +31,26 @@ class ProviderRegistry:
         return sorted(self._routes)
 
 
-_default_registry = ProviderRegistry(
-    {"mock-1": [MockProvider(name="mock"), MockProvider(name="mock-backup")]}
-)
+def build_registry(settings: Settings) -> ProviderRegistry:
+    """Decide which models are available from the app's settings."""
+    routes: dict[str, Sequence[LLMProvider]] = {
+        "mock-1": [MockProvider(name="mock"), MockProvider(name="mock-backup")],
+    }
+
+    gemini_key = settings.gemini_api_key.get_secret_value() if settings.gemini_api_key else ""
+    if gemini_key:
+        routes["gemini-flash"] = [
+            GeminiProvider(
+                api_key=gemini_key,
+                model_id=settings.gemini_model,
+                timeout_seconds=settings.provider_timeout_seconds,
+            )
+        ]
+
+    return ProviderRegistry(routes)
 
 
+@lru_cache
 def get_registry() -> ProviderRegistry:
-    """FastAPI dependency, so tests can swap in a different registry."""
-    return _default_registry
+    """FastAPI dependency. Cached so providers and their connections are created once."""
+    return build_registry(get_settings())
